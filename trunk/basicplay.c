@@ -807,6 +807,7 @@ int main(const int argc, char** argv)
   int force = 0;
   char* input_file = NULL;
   char* output_file = NULL;
+  int use_stdout = 0;
 
   /**
    * Read the command line arguments
@@ -842,6 +843,9 @@ int main(const int argc, char** argv)
       print_usage = 1;
       break;
     }
+    else if(strcmp(argv[i], "-c") == 0) {
+      use_stdout = 1;
+    }
     else if(strcmp(argv[i], "-wav")  == 0) {
       conversion_mode = CONVERT_TO_WAVE;
     }
@@ -874,40 +878,46 @@ int main(const int argc, char** argv)
       logMessage("Error: input PLAY statement not provided!\n\n");
       print_usage = 1;
     }
-    if(output_file == NULL) {
+    if(output_file == NULL && !use_stdout) {
       logMessage("Error: output filename not provided!\n\n");
       print_usage = 1;
     }
   }
   if(!print_usage && conversion_mode == CONVERSION_NOT_SELECTED) {
-    int error = 0;
-    char* suffix = getFileSuffix(output_file);
-    if(suffix == NULL) {
-      error = 1;
-    }
-    else if((strcasecmp("c", suffix) == 0) || 
-	    (strcasecmp("ic", suffix) == 0) ||
-	    (strcasecmp("cc", suffix) == 0)) {
-      conversion_mode = CONVERT_TO_IC;
-    }
-    else if((strcasecmp("wav", suffix) == 0) ||
-	    (strcasecmp("wave", suffix) == 0)) {
-      conversion_mode = CONVERT_TO_WAVE;
-    }
-    else if((strcasecmp("bas", suffix) == 0) ||
-	    (strcasecmp("basic", suffix) == 0)) {
-      conversion_mode = CONVERT_TO_BAS;
+    if(use_stdout) {
+      print_usage = 1;
+      logMessage("Error: you must specify the type of conversion when outputting to STDOUT\n\n");
     }
     else {
-      error = 1;
-    }
-
-    if(error) {
-      print_usage = 1;
-      logMessage("Error: filetype '%s' unknown; please specify the type of conversion\n\n", suffix);
+      int error = 0;
+      char* suffix = getFileSuffix(output_file);
+      if(suffix == NULL) {
+	error = 1;
+      }
+      else if((strcasecmp("c", suffix) == 0) || 
+	      (strcasecmp("ic", suffix) == 0) ||
+	      (strcasecmp("cc", suffix) == 0)) {
+	conversion_mode = CONVERT_TO_IC;
+      }
+      else if((strcasecmp("wav", suffix) == 0) ||
+	      (strcasecmp("wave", suffix) == 0)) {
+      conversion_mode = CONVERT_TO_WAVE;
+      }
+      else if((strcasecmp("bas", suffix) == 0) ||
+	      (strcasecmp("basic", suffix) == 0)) {
+	conversion_mode = CONVERT_TO_BAS;
+      }
+      else {
+	error = 1;
+      }
+      
+      if(error) {
+	print_usage = 1;
+	logMessage("Error: filetype '%s' unknown; please specify the type of conversion\n\n", suffix);
+      }
     }
   }
-  if(!print_usage && !force && fileExists(output_file)) {
+  if(!print_usage && !force && !use_stdout && fileExists(output_file)) {
     print_usage = 1;
     logMessage("Error: file '%s' is in the way!  Use '-f' option to force overwrite.\n\n", output_file);
   }
@@ -915,7 +925,7 @@ int main(const int argc, char** argv)
     logMessage("Version: BasicPlay %s\n", VERSION);
     logMessage("Copyright: Copyright (C) 2004 Evan Sultanik\n");
     logMessage("http://www.sultanik.com/\n\n");
-    logMessage("Usage: basicplay [options ...] [file | -e 'statement'] [options ...] file\n\n");
+    logMessage("Usage: basicplay [options ...] [file | -e 'statement'] [options ...] [file | -c]\n\n");
     logMessage("Where options include:\n");
     logMessage("  -wav render the input PLAY statement to a WAVE sound file\n");
     logMessage("  -ic  convert the input PLAY statement to Interactive C code\n");
@@ -924,6 +934,7 @@ int main(const int argc, char** argv)
     logMessage("       using the SOUND statement instead of PLAY\n");
     logMessage("  -e   used in place of an input file, this option must be followed by a string\n");
     logMessage("       containing the PLAY statement to be converted\n");
+    logMessage("  -c   output to STDOUT instead of a file");
     logMessage("  -f   force an overwrite of the output file, even if it already exists\n");
     logMessage("\nIf neither -wav, -bas, nor -ic options are given, BasicPlay will determine the\n");
     logMessage("conversion by the output file suffix.  For example, *.wav[e] will result in a\n");
@@ -968,7 +979,11 @@ int main(const int argc, char** argv)
     current_frequency = current_frequency->next;
   }
 
-  file = fopen(output_file, "wb");
+  if(use_stdout)
+    file = stdout;
+  else
+    file = fopen(output_file, "wb");
+
   switch(conversion_mode) {
   case CONVERT_TO_IC:
     writeIC(file, first_frequency);
@@ -981,7 +996,9 @@ int main(const int argc, char** argv)
     writeWave(file, data, total_duration * 44100, 44100);
     break;    
   }
-  fclose(file);
+
+  if(!use_stdout)
+    fclose(file);
 
   freeFrequencies(first_frequency);
   free(data);
