@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 #define VERSION "1.0 2004-05-20"
 
@@ -11,8 +12,9 @@
 
 #define MAX_NUMBER_SEQUENCE_LENGTH 5
 
-#define CONVERT_TO_WAVE 1
-#define CONVERT_TO_IC   2
+#define CONVERSION_NOT_SELECTED 0
+#define CONVERT_TO_WAVE         1
+#define CONVERT_TO_IC           2
 
 #define CODE_ERROR          0
 #define CODE_DURATION       1   /*          1 */
@@ -77,6 +79,17 @@ typedef struct tagFrequency
   double duration;
   struct tagFrequency* next;
 } Frequency;
+
+inline void logMessage(char* format, ...)
+{
+  va_list va_alist = {0};
+
+  va_start(va_alist, format);
+
+  vfprintf(stderr, format, va_alist);
+
+  va_end( va_alist );
+}
 
 /**
  * Writes the specified samples to a WAVE sound file.  The WAVE file
@@ -328,11 +341,11 @@ double notesToFrequency(Note* starting_note, Frequency* head)
     else if(current_note->code & CODE_L4_PER_MINUTE) {
       l4_per_minute = current_note->value;
       if(l4_per_minute < 32) {
-	printf("WARNING: Quarter notes per minute set to %.4f; minimum is 32!\n", l4_per_minute);
+	logMessage("WARNING: Quarter notes per minute set to %.4f; minimum is 32!\n", l4_per_minute);
 	l4_per_minute = 32;
       }
       else if(l4_per_minute > 255) {
-	printf("WARNING: Quarter notes per minute set to %.4f; maximum is 255!\n", l4_per_minute);
+	logMessage("WARNING: Quarter notes per minute set to %.4f; maximum is 255!\n", l4_per_minute);
 	l4_per_minute = 255;
       }
     }
@@ -342,11 +355,11 @@ double notesToFrequency(Note* starting_note, Frequency* head)
     else if(current_note->code & CODE_OCTAVE) {
       octave = current_note->value;
       if(octave < 0) {
-	printf("WARNING: Octave set at %d; minimum is 0!\n", octave);
+	logMessage("WARNING: Octave set at %d; minimum is 0!\n", octave);
 	octave = 0;
       }
       else if(octave > 6) {
-	printf("WARNING: Octave set at %d; maximum is 6!\n", octave);
+	logMessage("WARNING: Octave set at %d; maximum is 6!\n", octave);
 	octave = 6;
       }
     }
@@ -406,12 +419,12 @@ void syntaxError(char* comment, char* play, unsigned int play_length, unsigned i
     buffer[77] = '.';
   }
 
-  printf("Syntax Error: %s\n\"%s\"\n", comment, buffer);
+  logMessage("Syntax Error: %s\n\"%s\"\n", comment, buffer);
 
   for(i=0; i<=offset; i++) {
-    printf(" ");
+    logMessage(" ");
   }
-  printf("^\n");
+  logMessage("^\n");
 }
 
 /**
@@ -696,6 +709,20 @@ void writeIC(FILE* file, Frequency* frequency)
   fprintf(file, "\treturn 1;\n}\n");
 }
 
+char* getFileSuffix(char* string)
+{
+  int i, last_period = -1;
+  if(string == NULL)
+    return NULL;
+  for(i=0; string[i] != '\0'; i++) {
+    if(string[i] == '.')
+      last_period = i;
+  }
+  if(last_period < 0 || last_period >= i - 1)
+    return NULL;
+  return string + last_period + 1;
+}
+
 void readFile(FILE* file, char** string)
 {
   char buffer[255];
@@ -724,6 +751,23 @@ void readFile(FILE* file, char** string)
   }
 }
 
+int fileExists(char* filename)
+{
+  FILE* file = NULL;
+  
+  if(filename == NULL)
+    return 0;
+
+  file = fopen(filename, "rb");
+
+  if(file == NULL)
+    return 0;
+
+  fclose(file);
+
+  return 1;
+}
+
 int main(const int argc, char** argv)
 {
   FILE* file = NULL;
@@ -736,7 +780,7 @@ int main(const int argc, char** argv)
   short print_usage = 0;
   int i;
   char* input_string = NULL;
-  int conversion_mode = CONVERT_TO_WAVE;
+  int conversion_mode = CONVERSION_NOT_SELECTED;
   int force = 0;
   char* input_file = NULL;
   char* output_file = NULL;
@@ -751,7 +795,7 @@ int main(const int argc, char** argv)
     if(strncmp(argv[i], "-e", 2) == 0) {
       if(strcmp(argv[i], "-e") == 0) {
 	if(argc - 1 == i) {
-	  printf("Error: PLAY statement expected after -e option!\n\n");
+	  logMessage("Error: PLAY statement expected after -e option!\n\n");
 	  print_usage = 1;
 	  break;
 	}
@@ -761,7 +805,7 @@ int main(const int argc, char** argv)
       }
       else {
 	if(strlen(argv[i]) <= 2) {
-	  printf("Error: PLAY statement expected after -e option!\n\n");
+	  logMessage("Error: PLAY statement expected after -e option!\n\n");
 	  print_usage = 1;
 	  break;
 	}
@@ -785,7 +829,7 @@ int main(const int argc, char** argv)
       force = 1;
     }
     else if(strncmp(argv[i], "-", 1) == 0) {
-      printf("Error: unknown option '%s'!\n\n", argv[i]);
+      logMessage("Error: unknown option '%s'!\n\n", argv[i]);
     }
     else {
       if(input_file == NULL && input_string == NULL) {
@@ -795,44 +839,72 @@ int main(const int argc, char** argv)
 	output_file = argv[i];
       }
       else {
-	printf("Error: unknown option '%s'!\n\n", argv[i]);
+	logMessage("Error: unknown option '%s'!\n\n", argv[i]);
       }
     }
   }
   if(!print_usage) {
     if((input_file == NULL && input_string == NULL)) {
-      printf("Error: input PLAY statement not provided!\n\n");
+      logMessage("Error: input PLAY statement not provided!\n\n");
       print_usage = 1;
     }
     if(output_file == NULL) {
-      printf("Error: output filename not provided!\n\n");
+      logMessage("Error: output filename not provided!\n\n");
       print_usage = 1;
     }
   }
+  if(!print_usage && conversion_mode == CONVERSION_NOT_SELECTED) {
+    int error = 0;
+    char* suffix = getFileSuffix(output_file);
+    if(suffix == NULL) {
+      error = 1;
+    }
+    else if((strcasecmp("c", suffix) == 0) || 
+	    (strcasecmp("ic", suffix) == 0) ||
+	    (strcasecmp("cc", suffix) == 0)) {
+      conversion_mode = CONVERT_TO_IC;
+    }
+    else if((strcasecmp("wav", suffix) == 0) ||
+	    (strcasecmp("wave", suffix) == 0)) {
+      conversion_mode = CONVERT_TO_WAVE;
+    }
+    else {
+      error = 1;
+    }
+
+    if(error) {
+      print_usage = 1;
+      logMessage("Error: filetype '%s' unknown; please specify the type of conversion\n\n", suffix);
+    }
+  }
+  if(!print_usage && !force && fileExists(output_file)) {
+    print_usage = 1;
+    logMessage("Error: file '%s' is in the way!  Use '-f' option to force overwrite.\n\n", output_file);
+  }
   if(print_usage) {
-    printf("Version: BasicPlay %s\n", VERSION);
-    printf("Copyright: Copyright (C) 2004 Evan Sultanik\n");
-    printf("http://www.sultanik.com/\n\n");
-    printf("Usage: basicplay [options ...] [file | -e 'statement'] [options ...] file\n\n");
-    printf("Where options include:\n");
-    printf("  -wav convert the input PLAY statement to a WAVE sound file\n");
-    printf("  -ic  convert the input PLAY statement to Interactive C code\n");
-    printf("       that will play the music on a device such as a Handyboard\n");
-    printf("  -e   used in place of an input file, this option must be followed by a string\n");
-    printf("       containing the PLAY statement to be converted\n");
-    printf("  -f   force an overwrite of the output file, even if it already exists\n");
-    printf("\nIf neither -wav nor -ic options are given, BasicPlay will determine the\n");
-    printf("conversion by the output file suffix.  For example, *.wav[e] will result in a\n");
-    printf("WAVE file, and *.[i]c will result in an Interactive C file.  If the output\n");
-    printf("file suffix does not correspond to either file format, an error will be thrown\n");
-    printf("and the conversion will not occur.\n");
+    logMessage("Version: BasicPlay %s\n", VERSION);
+    logMessage("Copyright: Copyright (C) 2004 Evan Sultanik\n");
+    logMessage("http://www.sultanik.com/\n\n");
+    logMessage("Usage: basicplay [options ...] [file | -e 'statement'] [options ...] file\n\n");
+    logMessage("Where options include:\n");
+    logMessage("  -wav convert the input PLAY statement to a WAVE sound file\n");
+    logMessage("  -ic  convert the input PLAY statement to Interactive C code\n");
+    logMessage("       that will play the music on a device such as a Handyboard\n");
+    logMessage("  -e   used in place of an input file, this option must be followed by a string\n");
+    logMessage("       containing the PLAY statement to be converted\n");
+    logMessage("  -f   force an overwrite of the output file, even if it already exists\n");
+    logMessage("\nIf neither -wav nor -ic options are given, BasicPlay will determine the\n");
+    logMessage("conversion by the output file suffix.  For example, *.wav[e] will result in a\n");
+    logMessage("WAVE file, and *.[i]c will result in an Interactive C file.  If the output\n");
+    logMessage("file suffix does not correspond to either file format, an error will be thrown\n");
+    logMessage("and the conversion will not occur.\n");
     return -1;
   }
 
   if(input_string == NULL) {
     file = fopen(input_file, "rb");
     if(file == NULL) {
-      printf("Error: could not open %s for reading!\n", input_file);
+      logMessage("Error: could not open %s for reading!\n", input_file);
       return -2;
     }
     readFile(file, &input_string);
@@ -853,7 +925,7 @@ int main(const int argc, char** argv)
   data = (double*)malloc(sizeof(double) * CEILING(total_duration * 44100.0));
 
   if(data == NULL) {
-    printf("ERROR: Could not allocate enough memory!\n");
+    logMessage("ERROR: Could not allocate enough memory!\n");
     return -3;
   }
 
