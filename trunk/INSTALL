@@ -1,0 +1,16 @@
+There are no prerequisite libraries for BasicPlay.  Simply type `make'
+at the command line to compile the program.  This will create the
+`basicplay' executable.  You can then simply run the program from this
+directory.  If you wish to install the program more permanently, you
+may run `make install' as a superuser.  This will create the following
+files:
+
+  /usr/share/man/man1/basicplay.1.gz
+  /usr/share/bin/basicplay
+  /usr/share/basicplay/*
+
+If you do not wish to install the program this way, you may read the
+man page by running `make man'.
+
+Questions and comments should be addressed to Evan Sultanik.  Contact
+information is available at http://www.sultanik.com/.

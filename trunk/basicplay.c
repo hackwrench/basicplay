@@ -1,10 +1,35 @@
+/**
+ * basicplay.c
+ *
+ * Copyright (C) 2004 Evan A. Sultanik
+ * http://www.sultanik.com/
+ *
+ * The writeWave() function was modified from code originally written
+ * by Paul Bourke and is Copyright (C) 2001 by him.
+ * http://astronomy.swin.edu.au/~pbourke/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 
-#define VERSION "1.0 2004-05-20"
+#define VERSION "1.0 2004-09-23"
 
 #define ABS(val) ((val < 0) ? (val * -1.0) : val)
 
@@ -107,7 +132,13 @@ inline void logMessage(char* format, ...)
  * nfreq    - sample frequency
  *
  * This function was modified from code originally written by Paul
- * Bourke 
+ * Bourke.  Permission was granted by Bourke to include this code, and
+ * for it to be licensed under the GPL.  The GPL allows for this code
+ * to be used in any other program licensed under the GPL.  However, I
+ * urge anyone interested in using or modifying this code in another
+ * project to inform Mr. Bourke out of courtesy.  His contact
+ * information is available on the following website:
+ *
  * http://astronomy.swin.edu.au/~pbourke/
  */
 void writeWave(FILE *fptr, double *samples, long nsamples, int nfreq)
@@ -959,8 +990,6 @@ int main(const int argc, char** argv)
 
   head = (Note*)malloc(sizeof(Note));
   first_frequency = (Frequency*)malloc(sizeof(Frequency));
-
-  //char* notes = "t40 o4 c2 L4 eg<b.>l16cd 12c>a14g>c<gl16gfef12e<a8l16b>cdefgagfedc<bag8ab>cdefgfedc<bagf8gab>cdefedc<bagfe8fgab>cdedc<bagfed8efgab>c#d<ab>c#defgab>c<bagfefgagfedc<l8bms>gecmldgmsecd4g4<g2g2>c4e4g2l16agfefedcedededededededcdc4c<g>cegecefd<b>dc4c<g>cegecefd<b>dc4>c4c2";
 
   num_notes = parsePlayStatement(input_string, strlen(input_string), head);
 

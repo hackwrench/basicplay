@@ -23,6 +23,9 @@ $(DISTNAME).tar : basicplay
 	cp Makefile $(DISTNAME)
 	cp basicplay.c $(DISTNAME)
 	cp basicplay.1 $(DISTNAME)
+	cp AUTHORS $(DISTNAME)
+	cp INSTALL $(DISTNAME)
+	cp COPYING $(DISTNAME)
 	tar cvf $(DISTNAME).tar $(DISTNAME)
 	rm -rf $(DISTNAME)
 
