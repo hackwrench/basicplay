@@ -10,10 +10,6 @@ basicplay \- converts BASIC PLAY statements to other formats
 .B basicplay
 [options ...] [file | -e 'statement'] [options ...] file
 
-.SH EXAMPLES
-man pages will often contain examples following the
-.B SYNOPSIS
-
 .SH DESCRIPTION
 .B BasicPlay
 parses the BASIC PLAY statement, converting the sounds to a sequence
@@ -106,28 +102,30 @@ using the SOUND statement instead of PLAY
 used in place of an input file, this option must be followed by a string
 containing the PLAY statement to be converted
 .TP
+.B "\-c"
+output to STDOUT instead of a file.  If this option is selected, a
+conversion type must be provided (e.g. '-\wav', '\-ic', '\-bas')
+.TP
 .B "\-f"
 force an overwrite of the output file, even if it already exists
 
 .SH FILES
 .P
-.I /usr/share/man/man1/sample.1.gz
-.SH SEE ALSO
-.BR man (1),
-.BR man (7),
-.BR apropos (1),
-.BR less (1),
-.BR groff (1),
-.BR catman (8)
+.I /usr/share/man/man1/basicplay.1.gz
+.P
+.I /usr/share/bin/basicplay
+.P
+.I /usr/share/basicplay/*
+
+.\" .SH SEE ALSO
+.\" .BR man (1),
+
 .SH BUGS
-No known bugs at this time.
-.SH LIST
-.IP \(bu 2
-List item
-.IP \(bu 2
-List item 2
+
+Dots ('.') must succede the octave number of a note.  For example, 
+
 .SH AUTHOR
 .nf
-Joe "Zonker" Brockmeier (jzb@dissociatedpress.net)
+Evan A. Sultanik (http://www.sultanik.com/)
 .fi
 .SH HISTORY
