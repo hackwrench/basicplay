@@ -414,6 +414,7 @@ void syntaxError(char* comment, char* play, unsigned int play_length, unsigned i
     play_length = 80;
   }
   strncpy(buffer, play, play_length);
+  buffer[play_length] = '\0';
   if(leftover) {
     buffer[0] = '.';
     buffer[1] = '.';
@@ -762,15 +763,17 @@ void readFile(FILE* file, char** string)
     if(temp != NULL) {
       strcpy(*string, temp);
       strncpy(*string + strlen(temp), buffer, num_read);
+      (*string + strlen(temp))[num_read] = '\0';
       free(temp);
     }
     else {
       strncpy(*string, buffer, num_read);
+      (*string)[num_read] = '\0';
     }
   }
   if(*string == NULL) {
     *string = (char*)malloc(sizeof(char) * 1);
-    *string[0] = '\0';
+    (*string)[0] = '\0';
   }
 }
 
