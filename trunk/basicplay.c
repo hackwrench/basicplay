@@ -12,9 +12,15 @@
 
 #define MAX_NUMBER_SEQUENCE_LENGTH 5
 
+#define SOUND_HERTZ_LOWEST              32    /* lowest value BASIC allows for the hertz argument of the SOUND statement */
+#define SOUND_HERTZ_HIGHEST             32767 /* highest value BASIC allows for the hertz argument of the SOUND statement */
+#define SOUND_DURATION_TICKS_PER_SECOND 18.2  /* Ticks per second for the duration of the BASIC sound statement */
+#define SOUND_DURATION(SECONDS)         (SECONDS * SOUND_DURATION_TICKS_PER_SECOND)
+
 #define CONVERSION_NOT_SELECTED 0
 #define CONVERT_TO_WAVE         1
 #define CONVERT_TO_IC           2
+#define CONVERT_TO_BAS          4
 
 #define CODE_ERROR          0
 #define CODE_DURATION       1   /*          1 */
@@ -61,7 +67,7 @@
 #define GFLAT(octave) FSHARP(octave)
 #define GSHARP(octave) AFLAT(octave)
 
-unsigned int power_of_ten[5] = { 1, 10, 100, 1000, 10000 };
+const unsigned int power_of_ten[5] = { 1, 10, 100, 1000, 10000 };
 
 #define CEILING(x) (unsigned long)(x + 1.0)
 
@@ -693,7 +699,7 @@ void writeIC(FILE* file, Frequency* frequency)
 {
   Frequency* current = frequency;
 
-  fprintf(file, "/**\n * BASIC -> IC Play Statement Conversion\n * Using a Converter Written by Evan A. Sultanik \n * http://www.sultanik.com/ \n */\n\n");
+  fprintf(file, "/**\n * BASIC -> IC Play Statement Conversion\n * Using a Converter Written by Evan A. Sultanik\n * http://www.sultanik.com/\n */\n\n");
   fprintf(file, "int main()\n{\n");
 
   while(current != NULL) {
@@ -707,6 +713,23 @@ void writeIC(FILE* file, Frequency* frequency)
   }
 
   fprintf(file, "\treturn 1;\n}\n");
+}
+
+void writeBAS(FILE* file, Frequency* frequency)
+{
+  Frequency* current = frequency;
+
+  fprintf(file, "REM PLAY -> SOUND Statement Conversion\nREM Using a Converter Written by Evan A. Sultanik\nREM http://www.sultanik.com/\n\n");
+
+  while(current != NULL) {
+    if(current->duration > 0) {
+      if(current->hertz < SOUND_HERTZ_LOWEST || current->hertz > SOUND_HERTZ_HIGHEST)
+	fprintf(file, "Seconds = TIMER + %.4f\nDO\nLOOP WHILE TIMER <= Seconds\n", current->duration);
+      else
+	fprintf(file, "SOUND(%d, %.4f);\n", (int)current->hertz, SOUND_DURATION(current->duration));
+    }
+    current = current->next;
+  }
 }
 
 char* getFileSuffix(char* string)
@@ -825,6 +848,9 @@ int main(const int argc, char** argv)
     else if(strcmp(argv[i], "-ic") == 0) {
       conversion_mode = CONVERT_TO_IC;
     }
+    else if(strcmp(argv[i], "-bas") == 0) {
+      conversion_mode = CONVERT_TO_BAS;
+    }
     else if(strcmp(argv[i], "-f") == 0) {
       force = 1;
     }
@@ -868,6 +894,10 @@ int main(const int argc, char** argv)
 	    (strcasecmp("wave", suffix) == 0)) {
       conversion_mode = CONVERT_TO_WAVE;
     }
+    else if((strcasecmp("bas", suffix) == 0) ||
+	    (strcasecmp("basic", suffix) == 0)) {
+      conversion_mode = CONVERT_TO_BAS;
+    }
     else {
       error = 1;
     }
@@ -887,17 +917,19 @@ int main(const int argc, char** argv)
     logMessage("http://www.sultanik.com/\n\n");
     logMessage("Usage: basicplay [options ...] [file | -e 'statement'] [options ...] file\n\n");
     logMessage("Where options include:\n");
-    logMessage("  -wav convert the input PLAY statement to a WAVE sound file\n");
+    logMessage("  -wav render the input PLAY statement to a WAVE sound file\n");
     logMessage("  -ic  convert the input PLAY statement to Interactive C code\n");
     logMessage("       that will play the music on a device such as a Handyboard\n");
+    logMessage("  -bas convert the input PLAY statement to BASIC code,\n");
+    logMessage("       using the SOUND statement instead of PLAY\n");
     logMessage("  -e   used in place of an input file, this option must be followed by a string\n");
     logMessage("       containing the PLAY statement to be converted\n");
     logMessage("  -f   force an overwrite of the output file, even if it already exists\n");
-    logMessage("\nIf neither -wav nor -ic options are given, BasicPlay will determine the\n");
+    logMessage("\nIf neither -wav, -bas, nor -ic options are given, BasicPlay will determine the\n");
     logMessage("conversion by the output file suffix.  For example, *.wav[e] will result in a\n");
-    logMessage("WAVE file, and *.[i]c will result in an Interactive C file.  If the output\n");
-    logMessage("file suffix does not correspond to either file format, an error will be thrown\n");
-    logMessage("and the conversion will not occur.\n");
+    logMessage("WAVE file, *.[i]c will result in an Interactive C file, and *.bas[ic] will\n");
+    logMessage("result in a BASIC file.  If the output file suffix does not correspond to a\n");
+    logMessage("file format, an error will be thrown and the conversion will not occur.\n");
     return -1;
   }
 
@@ -936,16 +968,20 @@ int main(const int argc, char** argv)
     current_frequency = current_frequency->next;
   }
 
-  if(conversion_mode == CONVERT_TO_WAVE) {
-    file = fopen(output_file, "wb");
-    writeWave(file, data, total_duration * 44100, 44100);
-    fclose(file);
-  }
-  else if(conversion_mode == CONVERT_TO_IC) {
-    file = fopen(output_file, "wb");
+  file = fopen(output_file, "wb");
+  switch(conversion_mode) {
+  case CONVERT_TO_IC:
     writeIC(file, first_frequency);
-    fclose(file);
+    break;
+  case CONVERT_TO_BAS:
+    writeBAS(file, first_frequency);
+    break;
+  case CONVERT_TO_WAVE:
+  default:
+    writeWave(file, data, total_duration * 44100, 44100);
+    break;    
   }
+  fclose(file);
 
   freeFrequencies(first_frequency);
   free(data);
