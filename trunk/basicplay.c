@@ -934,7 +934,7 @@ int main(const int argc, char** argv)
     logMessage("       using the SOUND statement instead of PLAY\n");
     logMessage("  -e   used in place of an input file, this option must be followed by a string\n");
     logMessage("       containing the PLAY statement to be converted\n");
-    logMessage("  -c   output to STDOUT instead of a file");
+    logMessage("  -c   output to STDOUT instead of a file\n");
     logMessage("  -f   force an overwrite of the output file, even if it already exists\n");
     logMessage("\nIf neither -wav, -bas, nor -ic options are given, BasicPlay will determine the\n");
     logMessage("conversion by the output file suffix.  For example, *.wav[e] will result in a\n");
