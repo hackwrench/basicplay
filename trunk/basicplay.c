@@ -1,13 +1,18 @@
 #include <stdio.h>
 #include <math.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
+
+#define VERSION "1.0 2004-05-20"
 
 #define ABS(val) ((val < 0) ? (val * -1.0) : val)
 
 #define PI 3.14159265358979
 
 #define MAX_NUMBER_SEQUENCE_LENGTH 5
+
+#define CONVERT_TO_WAVE 1
+#define CONVERT_TO_IC   2
 
 #define CODE_ERROR          0
 #define CODE_DURATION       1   /*          1 */
@@ -73,55 +78,62 @@ typedef struct tagFrequency
   struct tagFrequency* next;
 } Frequency;
 
-/*
-   Write an WAVE sound file
-   Only do one channel, only support 16 bit.
-   Supports any (reasonable) sample frequency
-   Little/big endian independent!
-*/
+/**
+ * Writes the specified samples to a WAVE sound file.  The WAVE file
+ * is set up with one 16-bit channel.  Endian independent.
+ *
+ * fptr     - pointer to the file to which to write
+ * samples  - array of sample values
+ * nsamples - number of samples
+ * nfreq    - sample frequency
+ *
+ * This function was modified from code originally written by Paul
+ * Bourke 
+ * http://astronomy.swin.edu.au/~pbourke/
+ */
 void writeWave(FILE *fptr, double *samples, long nsamples, int nfreq)
 {
    unsigned short v;
    int i;
-   unsigned long totalsize,bytespersec;
-   double themin,themax,scale,themid;
+   unsigned long totalsize, bytespersec;
+   double themin, themax, scale, themid;
 
    /* Write the form chunk */
-   fprintf(fptr,"RIFF");
+   fprintf(fptr, "RIFF");
    totalsize = 2 * nsamples + 36;
-   fputc((totalsize & 0x000000ff),fptr);        /* File size */
-   fputc((totalsize & 0x0000ff00) >> 8,fptr);
-   fputc((totalsize & 0x00ff0000) >> 16,fptr);
-   fputc((totalsize & 0xff000000) >> 24,fptr);
-   fprintf(fptr,"WAVE");
-   fprintf(fptr,"fmt ");                        /* fmt_ chunk */
-   fputc(16,fptr);                              /* Chunk size */
-   fputc(0,fptr);
-   fputc(0,fptr);
-   fputc(0,fptr);
-   fputc(1,fptr);                               /* Format tag - uncompressed */
-   fputc(0,fptr);
-   fputc(1,fptr);                               /* Channels */
-   fputc(0,fptr);
-   fputc((nfreq & 0x000000ff),fptr);            /* Sample frequency (Hz) */
-   fputc((nfreq & 0x0000ff00) >> 8,fptr);
-   fputc((nfreq & 0x00ff0000) >> 16,fptr);
-   fputc((nfreq & 0xff000000) >> 24,fptr);
+   fputc((totalsize & 0x000000ff), fptr);       /* File size */
+   fputc((totalsize & 0x0000ff00) >> 8, fptr);
+   fputc((totalsize & 0x00ff0000) >> 16, fptr);
+   fputc((totalsize & 0xff000000) >> 24, fptr);
+   fprintf(fptr, "WAVE");
+   fprintf(fptr, "fmt ");                       /* fmt_ chunk */
+   fputc(16, fptr);                             /* Chunk size */
+   fputc(0, fptr);
+   fputc(0, fptr);
+   fputc(0, fptr);
+   fputc(1, fptr);                              /* Format tag - uncompressed */
+   fputc(0, fptr);
+   fputc(1, fptr);                              /* Channels */
+   fputc(0, fptr);
+   fputc((nfreq & 0x000000ff), fptr);           /* Sample frequency (Hz) */
+   fputc((nfreq & 0x0000ff00) >> 8, fptr);
+   fputc((nfreq & 0x00ff0000) >> 16, fptr);
+   fputc((nfreq & 0xff000000) >> 24, fptr);
    bytespersec = 2 * nfreq;
-   fputc((bytespersec & 0x000000ff),fptr);      /* Average bytes per second */
-   fputc((bytespersec & 0x0000ff00) >> 8,fptr);
-   fputc((bytespersec & 0x00ff0000) >> 16,fptr);
-   fputc((bytespersec & 0xff000000) >> 24,fptr);
-   fputc(2,fptr);                               /* Block alignment */
+   fputc((bytespersec & 0x000000ff), fptr);     /* Average bytes per second */
+   fputc((bytespersec & 0x0000ff00) >> 8, fptr);
+   fputc((bytespersec & 0x00ff0000) >> 16, fptr);
+   fputc((bytespersec & 0xff000000) >> 24, fptr);
+   fputc(2, fptr);                              /* Block alignment */
+   fputc(0, fptr);
+   fputc(16, fptr);                             /* Bits per sample */
    fputc(0,fptr);
-   fputc(16,fptr);                              /* Bits per sample */
-   fputc(0,fptr);
-   fprintf(fptr,"data");
+   fprintf(fptr, "data");
    totalsize = 2 * nsamples;
-   fputc((totalsize & 0x000000ff),fptr);        /* Data size */
-   fputc((totalsize & 0x0000ff00) >> 8,fptr);
-   fputc((totalsize & 0x00ff0000) >> 16,fptr);
-   fputc((totalsize & 0xff000000) >> 24,fptr);
+   fputc((totalsize & 0x000000ff), fptr);       /* Data size */
+   fputc((totalsize & 0x0000ff00) >> 8, fptr);
+   fputc((totalsize & 0x00ff0000) >> 16, fptr);
+   fputc((totalsize & 0xff000000) >> 24, fptr);
 
    /* Find the range */
    themin = samples[0];
@@ -151,6 +163,9 @@ void writeWave(FILE *fptr, double *samples, long nsamples, int nfreq)
    }
 }
 
+/**
+ * Deletes a notes linked list
+ */
 void freeNotes(Note* starting_note)
 {
   if(starting_note == NULL)
@@ -160,6 +175,9 @@ void freeNotes(Note* starting_note)
   free(starting_note);
 }
 
+/**
+ * Deletes a frequency linked list
+ */
 void freeFrequencies(Frequency* starting_frequency)
 {
   if(starting_frequency == NULL)
@@ -169,6 +187,10 @@ void freeFrequencies(Frequency* starting_frequency)
   free(starting_frequency);
 }
 
+/**
+ * Internal function used to add a new frequency to a frequency linked
+ * list
+ */
 void addFrequency(double hertz, double duration, Frequency** current_frequency, Frequency** last_frequency) {
   if(*current_frequency == NULL) {
     *current_frequency = (Frequency*)malloc(sizeof(Frequency));
@@ -184,6 +206,14 @@ void addFrequency(double hertz, double duration, Frequency** current_frequency, 
   *current_frequency = NULL;
 }
 
+/**
+ * Converts a linked list of notes to a linked list of frequencies.
+ *
+ * starting_note - pointer to the first note in the notes lined list
+ * head          - pointer to what is to be the head of the new frequencies
+ *                 linked list.  Note that the value of the head will be set;
+ *                 any value it currently has will be overwritten.
+ */
 double notesToFrequency(Note* starting_note, Frequency* head)
 {
   short octave = 0;
@@ -337,6 +367,9 @@ double notesToFrequency(Note* starting_note, Frequency* head)
   return total_duration;
 }
 
+/**
+ * Prints a syntax error message
+ */
 void syntaxError(char* comment, char* play, unsigned int play_length, unsigned int offset)
 {
   char buffer[81];
@@ -381,6 +414,9 @@ void syntaxError(char* comment, char* play, unsigned int play_length, unsigned i
   printf("^\n");
 }
 
+/**
+ * Internal function to add a note to the end of a notes linked list.
+ */
 void addNote(int code, int value, Note** current_note, Note** last_note) {
   if(*current_note == NULL) {
     *current_note = (Note*)malloc(sizeof(Note));
@@ -660,23 +696,155 @@ void writeIC(FILE* file, Frequency* frequency)
   fprintf(file, "\treturn 1;\n}\n");
 }
 
-int main(const int argc, const char** argv)
+void readFile(FILE* file, char** string)
 {
-  FILE* out = NULL;
+  char buffer[255];
+  char* temp;
+  int num_read;
+  int length = 0;
+
+  *string = NULL;
+
+  while((num_read = fread(buffer, sizeof(char), 255, file))) {
+    length += num_read;
+    temp = *string;
+    *string = (char*)malloc(sizeof(char) * (length + 1));
+    if(temp != NULL) {
+      strcpy(*string, temp);
+      strncpy(*string + strlen(temp), buffer, num_read);
+      free(temp);
+    }
+    else {
+      strncpy(*string, buffer, num_read);
+    }
+  }
+  if(*string == NULL) {
+    *string = (char*)malloc(sizeof(char) * 1);
+    *string[0] = '\0';
+  }
+}
+
+int main(const int argc, char** argv)
+{
+  FILE* file = NULL;
   double* data;
   unsigned long num_notes;
   double total_duration, offset = 0;
   Frequency* first_frequency;
   Frequency* current_frequency;
   Note* head;
+  short print_usage = 0;
+  int i;
+  char* input_string = NULL;
+  int conversion_mode = CONVERT_TO_WAVE;
+  int force = 0;
+  char* input_file = NULL;
+  char* output_file = NULL;
+
+  /**
+   * Read the command line arguments
+   */
+  if(argc <= 1) {
+    print_usage = 3;
+  }
+  for(i=1; i<argc; i++) {
+    if(strncmp(argv[i], "-e", 2) == 0) {
+      if(strcmp(argv[i], "-e") == 0) {
+	if(argc - 1 == i) {
+	  printf("Error: PLAY statement expected after -e option!\n\n");
+	  print_usage = 1;
+	  break;
+	}
+	/* The next argument should be the play statement */
+	input_string = (char*)malloc(sizeof(char) * (strlen(argv[i+1]) + 1));
+	strcpy(input_string, argv[i++]);
+      }
+      else {
+	if(strlen(argv[i]) <= 2) {
+	  printf("Error: PLAY statement expected after -e option!\n\n");
+	  print_usage = 1;
+	  break;
+	}
+	input_string = (char*)malloc(sizeof(char) * (strlen(argv[i]) - 1));
+	strcpy(input_string, argv[i]+2);
+      }
+    }
+    else if(strcmp(argv[i], "-?")     == 0 ||
+	    strcmp(argv[i], "--help") == 0 ||
+	    strcmp(argv[i], "-h")     == 0) {
+      print_usage = 1;
+      break;
+    }
+    else if(strcmp(argv[i], "-wav")  == 0) {
+      conversion_mode = CONVERT_TO_WAVE;
+    }
+    else if(strcmp(argv[i], "-ic") == 0) {
+      conversion_mode = CONVERT_TO_IC;
+    }
+    else if(strcmp(argv[i], "-f") == 0) {
+      force = 1;
+    }
+    else if(strncmp(argv[i], "-", 1) == 0) {
+      printf("Error: unknown option '%s'!\n\n", argv[i]);
+    }
+    else {
+      if(input_file == NULL && input_string == NULL) {
+	input_file = argv[i];
+      }
+      else if((input_file != NULL || input_string != NULL) && output_file == NULL) {
+	output_file = argv[i];
+      }
+      else {
+	printf("Error: unknown option '%s'!\n\n", argv[i]);
+      }
+    }
+  }
+  if(!print_usage) {
+    if((input_file == NULL && input_string == NULL)) {
+      printf("Error: input PLAY statement not provided!\n\n");
+      print_usage = 1;
+    }
+    if(output_file == NULL) {
+      printf("Error: output filename not provided!\n\n");
+      print_usage = 1;
+    }
+  }
+  if(print_usage) {
+    printf("Version: BasicPlay %s\n", VERSION);
+    printf("Copyright: Copyright (C) 2004 Evan Sultanik\n");
+    printf("http://www.sultanik.com/\n\n");
+    printf("Usage: basicplay [options ...] [file | -e 'statement'] [options ...] file\n\n");
+    printf("Where options include:\n");
+    printf("  -wav convert the input PLAY statement to a WAVE sound file\n");
+    printf("  -ic  convert the input PLAY statement to Interactive C code\n");
+    printf("       that will play the music on a device such as a Handyboard\n");
+    printf("  -e   used in place of an input file, this option must be followed by a string\n");
+    printf("       containing the PLAY statement to be converted\n");
+    printf("  -f   force an overwrite of the output file, even if it already exists\n");
+    printf("\nIf neither -wav nor -ic options are given, BasicPlay will determine the\n");
+    printf("conversion by the output file suffix.  For example, *.wav[e] will result in a\n");
+    printf("WAVE file, and *.[i]c will result in an Interactive C file.  If the output\n");
+    printf("file suffix does not correspond to either file format, an error will be thrown\n");
+    printf("and the conversion will not occur.\n");
+    return -1;
+  }
+
+  if(input_string == NULL) {
+    file = fopen(input_file, "rb");
+    if(file == NULL) {
+      printf("Error: could not open %s for reading!\n", input_file);
+      return -2;
+    }
+    readFile(file, &input_string);
+    fclose(file);
+  }
 
   head = (Note*)malloc(sizeof(Note));
   first_frequency = (Frequency*)malloc(sizeof(Frequency));
 
-  char* notes = "t40 o4 c2 L4 eg<b.>l16cd 12c>a14g>c<gl16gfef12e<a8l16b>cdefgagfedc<bag8ab>cdefgfedc<bagf8gab>cdefedc<bagfe8fgab>cdedc<bagfed8efgab>c#d<ab>c#defgab>c<bagfefgagfedc<l8bms>gecmldgmsecd4g4<g2g2>c4e4g2l16agfefedcedededededededcdc4c<g>cegecefd<b>dc4c<g>cegecefd<b>dc4>c4c2";
-  
+  //char* notes = "t40 o4 c2 L4 eg<b.>l16cd 12c>a14g>c<gl16gfef12e<a8l16b>cdefgagfedc<bag8ab>cdefgfedc<bagf8gab>cdefedc<bagfe8fgab>cdedc<bagfed8efgab>c#d<ab>c#defgab>c<bagfefgagfedc<l8bms>gecmldgmsecd4g4<g2g2>c4e4g2l16agfefedcedededededededcdc4c<g>cegecefd<b>dc4c<g>cegecefd<b>dc4>c4c2";
 
-  num_notes = parsePlayStatement(notes, strlen(notes), head);
+  num_notes = parsePlayStatement(input_string, strlen(input_string), head);
 
   total_duration = notesToFrequency(head, first_frequency);
 
@@ -686,7 +854,7 @@ int main(const int argc, const char** argv)
 
   if(data == NULL) {
     printf("ERROR: Could not allocate enough memory!\n");
-    return -1;
+    return -3;
   }
 
   current_frequency = first_frequency;
@@ -696,25 +864,20 @@ int main(const int argc, const char** argv)
     current_frequency = current_frequency->next;
   }
 
-  /*offset = addSound(data, offset, 1, C(octave), 44100);
-  offset = addSound(data, offset, 1, D(octave), 44100);
-  offset = addSound(data, offset, 1, E(octave), 44100);
-  offset = addSound(data, offset, 1, F(octave), 44100);
-  offset = addSound(data, offset, 1, G(octave), 44100);
-  offset = addSound(data, offset, 1, A(octave + 1), 44100);
-  offset = addSound(data, offset, 1, B(octave + 1), 44100);
-  offset = addSound(data, offset, 1, C(octave + 1), 44100);*/
-
-  out = fopen("t.wav", "wb");
-  writeWave(out, data, total_duration * 44100, 44100);
-  fclose(out);
-
-  out = fopen("t.ic", "wb");
-  writeIC(out, first_frequency);
-  fclose(out);
+  if(conversion_mode == CONVERT_TO_WAVE) {
+    file = fopen(output_file, "wb");
+    writeWave(file, data, total_duration * 44100, 44100);
+    fclose(file);
+  }
+  else if(conversion_mode == CONVERT_TO_IC) {
+    file = fopen(output_file, "wb");
+    writeIC(file, first_frequency);
+    fclose(file);
+  }
 
   freeFrequencies(first_frequency);
   free(data);
+  free(input_string);
 
   return 1;
 }
