@@ -1,0 +1,133 @@
+.\" man page for Basicplay
+.\" Copyright 2004, Evan Sultanik
+.\" Navigate to http://www.sultanik.com/ to report errors and omissions.
+.TH basicplay 1 "05 June 2004" "1.0" "BasicPlay"
+
+.SH NAME
+basicplay \- converts BASIC PLAY statements to other formats
+
+.SH SYNOPSIS
+.B basicplay
+[options ...] [file | -e 'statement'] [options ...] file
+
+.SH EXAMPLES
+man pages will often contain examples following the
+.B SYNOPSIS
+
+.SH DESCRIPTION
+.B BasicPlay
+parses the BASIC PLAY statement, converting the sounds to a sequence
+of frequencies.  These frequencies can then be saved in numerous
+formats including Interactive C and the BASIC SOUND statement.  The
+sounds can also be rendered to a WAVE file.
+
+.SH PLAY Statement Syntax
+
+NOTE: the syntax is case-insensitive.  Whitespace is also ignored.
+
+.TP
+.B "O"
+followed by a number in the range 0--6; sets the current octave.  Default: 0.
+.TP
+.B ">" 
+increase the current octave by one
+.TP
+.B "<"
+decrease the current octave by one
+.TP
+.B "T"
+followed by a number in the range 32--255; sets the current number of quarter notes per minute.  Default: 120.
+.TP
+.B "L"
+followed by a positive integer; sets the current note length. For example,
+.B "L4"
+is a quarter note, and
+.B "L16"
+is a sixteenth note.  Default: 4.
+.TP
+.B "P"
+followed by a positive integer; pause for that length of time (same format as the
+.B "L"
+length)
+.TP
+.B "MB/MF"
+In BASIC, these commands dictated if the music was in the foreground or background.  These are ignored by
+.B BasicPlay
+.TP
+.B "MN"
+Music Normal; each note plays for 7/8ths of its length.  The remaining
+1/8th of the time is silent.  This is the default.
+.TP
+.B "MS"
+Music Staccato; each note plays for 3/4ths of its length.  The remaining
+1/4th of the time is silent.
+.TP
+.B "ML"
+Music Legato; each note plays for its entire duration.
+.TP
+.B "a,b,c,d,e,f,g"
+Plays the corresponding note.
+.TP
+.B "#, +"
+Must follow a note; makes the previous note a sharp.
+.TP
+.B "-"
+Must follow a note; makes the previous note a flat.
+.TP
+.B "."
+Must follow a note; makes the previous note dotted.  This will
+increase the duration of that note by 50%.  This command may be used
+multiple times after a single note.
+
+.SS Play Statement Example
+
+t40o4c2L4eg<b.>l16cd 12c>a14g>c<gl16gfef12e<a8l16b>
+.P
+cdefgagfedc<bag8ab>cdefgfedc<bagf8gab>cdefedc<bagf
+e8fgab>cdedc<bagfed8efgab>c#d<ab>c#defgab>c<bagfef
+gagfedc<l8bms>gecmldgmsecd4g4<g2g2>c4e4g2l16agfefe
+dcedededededededcdc4c<g>cegecefd<b>dc4c<g>cegecefd
+<b>dc4>c4c2
+
+.SH OPTIONS
+.TP
+.B "\-wav"
+render the input PLAY statement to a WAVE sound file
+.TP
+.B "\-ic"
+convert the input PLAY statement to Interactive C code
+that will play the music on a device such as a Handyboard
+.TP
+.B "\-bas"
+convert the input PLAY statement to BASIC code,
+using the SOUND statement instead of PLAY
+.TP
+.B "\-e"
+used in place of an input file, this option must be followed by a string
+containing the PLAY statement to be converted
+.TP
+.B "\-f"
+force an overwrite of the output file, even if it already exists
+
+.SH FILES
+.P
+.I /usr/share/man/man1/sample.1.gz
+.SH SEE ALSO
+.BR man (1),
+.BR man (7),
+.BR apropos (1),
+.BR less (1),
+.BR groff (1),
+.BR catman (8)
+.SH BUGS
+No known bugs at this time.
+.SH LIST
+.IP \(bu 2
+List item
+.IP \(bu 2
+List item 2
+.SH AUTHOR
+.nf
+Joe "Zonker" Brockmeier (jzb@dissociatedpress.net)
+.fi
+.SH HISTORY
