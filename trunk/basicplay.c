@@ -29,7 +29,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-#define VERSION "1.0 2004-09-23"
+#define VERSION "1.1 2005-07-27"
 
 #define ABS(val) ((val < 0) ? (val * -1.0) : val)
 
@@ -81,13 +81,13 @@
 #define BFLAT(octave) 466.16 * pow(2, octave - 3)
 #define ASHARP(octave) BFLAT(octave)
 #define BSHARP(octave) C(octave)
-#define CFLAT(octave) BSHARP(octave)
+#define CFLAT(octave) B(octave)
 #define CSHARP(octave) 277.18 * pow(2, octave - 3)
 #define DFLAT(octave) CSHARP(octave)
 #define EFLAT(octave) 311.13 * pow(2, octave - 3)
 #define DSHARP(octave) EFLAT(octave)
 #define ESHARP(octave) F(octave)
-#define FFLAT(octave) ESHARP(octave)
+#define FFLAT(octave) E(octave)
 #define FSHARP(octave) 369.99 * pow(2, octave - 3)
 #define GFLAT(octave) FSHARP(octave)
 #define GSHARP(octave) AFLAT(octave)
